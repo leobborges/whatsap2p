@@ -14,10 +14,31 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 struct sockaddr_in client;
 
+
+struct location
+{
+	char ipAddress[16];
+	int port;
+};
+
+struct serverData
+{
+	char userPhone[15];
+	struct location userLocation;
+};
+
+struct serverData serverD[3];
+
+
+/* Semáforo Mutex */
+sem_t mutex;
+
 void *funcThread(void *nsClient);
+int searchPhoneNumber(char phoneNumber[]);
 
 /* Servidor TCP */
 int main(int argc, char *argv[])
@@ -75,6 +96,15 @@ int main(int argc, char *argv[])
 		exit(4);
 	}
 
+	for (int i = 0; i < 3; i++)
+	{
+		strcpy(serverD[i].userPhone, "");
+		strcpy(serverD[i].userLocation.ipAddress, "");
+	}
+
+	/* Inicia o semáforo mutex */
+	sem_init(&mutex, 0, 1);
+
 	while(1){
 		/*
 	     	* Aceita uma conex�o e cria um novo socket atrav�s do qual
@@ -106,33 +136,68 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+int searchPhoneNumber(char phoneNumber[]) {
+	for(int sizeOfServer = 0; sizeOfServer < 3; sizeOfServer++) 
+	{
+		if(strcmp(serverD[sizeOfServer].userPhone, phoneNumber) == 0) 
+		{
+			printf("Encontrado telefone igual\n");
+			return 1;
+		}
+		
+	}
+
+	return 0;
+}
+
 void *funcThread(void *nsClient)
 {
 	int ns = *(int *)nsClient;
 	
 	char sendbuf;
-	char address[16];
 	char clientData[16];
 
-	strcpy(address,inet_ntoa(client.sin_addr));
-
-	/* Recebe uma mensagem do cliente atrav�s do novo socket conectado */
-	if (recv(ns, &clientData, sizeof(clientData), 0) == -1)
+	do
 	{
-		perror("Recv()");
-		exit(6);
-	}
+		/* Recebe uma mensagem do cliente atrav�s do novo socket conectado */
+		if (recv(ns, &clientData, sizeof(clientData), 0) == -1)
+		{
+			perror("Recv()");
+			exit(6);
+		}
 
-	printf("\nClient IP Address: %s", address);
-	printf("\nPhone number: %s\n", clientData);
-	sendbuf = 'S';
+		sem_wait(&mutex);
 
-	/* Envia uma mensagem ao cliente atrav�s do socket conectado */
-	if (send(ns, &sendbuf, sizeof(sendbuf), 0) < 0)
-	{
-		perror("Send()");
-		exit(7);
-	}
+		int search = searchPhoneNumber(clientData);
+		if(search == 0)
+		{
+			for(int sizeOfServer = 0; sizeOfServer < 3; sizeOfServer++) 
+			{
+				if(strcmp(serverD[sizeOfServer].userPhone, "") == 0)
+				{
+					strcpy(serverD[sizeOfServer].userPhone, clientData);
+					strcpy(serverD[sizeOfServer].userLocation.ipAddress, inet_ntoa(client.sin_addr));
+					serverD[sizeOfServer].userLocation.port = ntohs(client.sin_port);
+
+					sendbuf = 'S';
+					break;
+				}
+			}
+		}
+		else
+		{
+			sendbuf = 'N';
+		}
+
+		sem_post(&mutex);
+
+		/* Envia uma mensagem ao cliente atrav�s do socket conectado */
+		if (send(ns, &sendbuf, sizeof(sendbuf), 0) < 0)
+		{
+			perror("Send()");
+			exit(7);
+		}
+	} while(sendbuf != 'S');
 
 	/* Fecha o socket conectado ao cliente */
 	close(ns);
