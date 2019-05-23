@@ -16,6 +16,26 @@
 #include <string.h>
 #include <unistd.h>
 
+void exibirMenu(){
+	// opcao do menu
+	int opcaoMenu = 0;
+
+	//Exibi o menu para o cliente
+	do
+	{
+		printf("Menu: \n");
+		printf("1) Enviar mensagem\n");
+		printf("2) Adicionar Contato\n");
+		printf("3) Visualizar Contatos\n");
+		printf("4) Adicionar Grupo de Contatos\n");
+		printf("5) Visualizar Grupo de Contatos\n");
+		printf("6) Sair\n\n");
+		printf("Digite a opcao escolhida:\n");
+		__fpurge(stdin);
+		scanf("%d", &opcaoMenu);
+	} while (opcaoMenu != 6);
+}
+
 /* Cliente TCP */
 int main(int argc, char *argv[])
 {
@@ -71,6 +91,8 @@ int main(int argc, char *argv[])
     printf("Insira o seu numero de telefone para entrar no Whatsap2p:\n");
     __fpurge(stdin);
     fgets(phoneNumber, sizeof(phoneNumber), stdin);
+
+	exibirMenu();
 
     /* Envia a mensagem no buffer de envio para o servidor */
     if (send(s, &phoneNumber, sizeof(phoneNumber), 0) < 0)
