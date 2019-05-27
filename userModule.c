@@ -16,23 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 
-void exibirMenu(){
-	int option = 0;
-
-	do
-	{
-		printf("Menu: \n");
-		printf("1) Enviar mensagem\n");
-		printf("2) Adicionar Contato\n");
-		printf("3) Visualizar Contatos\n");
-		printf("4) Adicionar Grupo de Contatos\n");
-		printf("5) Visualizar Grupo de Contatos\n");
-		printf("6) Sair\n\n");
-		printf("Digite a opcao escolhida:\n");
-		__fpurge(stdin);
-		scanf("%d", &option);
-	} while (option != 6);
-}
+void exibirMenu(int s);
 
 /* Cliente TCP */
 int main(int argc, char *argv[])
@@ -42,7 +26,6 @@ int main(int argc, char *argv[])
 	struct sockaddr_in server;
 	int s;
 	char recvbuf;
-	char sendTo[16];
 
 	// Numero de telefone do usuario
 	char phoneNumber[15];
@@ -105,15 +88,67 @@ int main(int argc, char *argv[])
 			perror("Recv()");
 			exit(6);
 		}
+
 	}
 
-	exibirMenu();
+	exibirMenu(s);
 
 	/* Fecha o socket */
 	close(s);
 
 	printf("Cliente terminou com sucesso.\n");
 	exit(0);
+}
+
+void exibirMenu(int s) {
+	int option = 0;
+	do
+	{
+		printf("Menu: \n");
+		printf("1) Enviar mensagem\n");
+		printf("2) Adicionar Contato\n");
+		printf("3) Visualizar Contatos\n");
+		printf("4) Adicionar Grupo de Contatos\n");
+		printf("5) Visualizar Grupo de Contatos\n");
+		printf("6) Sair\n\n");
+		printf("Digite a opcao escolhida:\n");
+		__fpurge(stdin);
+		scanf("%d", &option);
+
+		if(option == 1) {
+
+		}
+		else if(option == 2) {
+
+		}
+		else if(option == 3) {
+
+		}
+		else if(option == 4) {
+
+		}
+		else if(option == 5) {
+
+		}
+		else if(option == 6) {
+			char quitMessage = 'Q';
+			char rcvMessage;
+			/* Envia a mensagem para o servidor para remover */
+			if (send(s, &quitMessage, sizeof(quitMessage), 0) < 0)
+			{
+				perror("Send()");
+				exit(5);
+			}
+			printf("Saindo do WhatsAp2p...\n");
+			/* Recebe a mensagem do servidor no buffer de recep��o */
+			if (recv(s, &rcvMessage, sizeof(rcvMessage), 0) < 0)
+			{
+				perror("Recv()");
+				exit(6);
+			}
+			break;
+		}
+	} while (option != 6);
 }
 
 
