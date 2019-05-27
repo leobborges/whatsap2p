@@ -29,16 +29,19 @@ struct serverData
 {
 	char userPhone[15];
 	struct location userLocation;
+	struct serverData *prox;
 };
 
-struct serverData serverD[3];
+typedef struct serverData data;
 
+data *users;
 
 /* Semáforo Mutex */
 sem_t mutex;
 
 void *funcThread(void *nsClient);
 int searchPhoneNumber(char phoneNumber[]);
+void insertUser(char phoneNumber[], char ip[], int port);
 
 /* Servidor TCP */
 int main(int argc, char *argv[])
@@ -50,6 +53,13 @@ int main(int argc, char *argv[])
 	int ns; /* Socket conectado ao cliente        */
 	int namelen, response;
 	pthread_t thread_id;
+
+	users = (data *) malloc(sizeof(data));
+	if(!users){
+		printf("Sem memoria disponivel!\n");
+		exit(1);
+	}
+	users->prox = NULL;
 
 	/*
         * O primeiro argumento (argv[1]) � a porta
@@ -96,12 +106,6 @@ int main(int argc, char *argv[])
 		exit(4);
 	}
 
-	for (int i = 0; i < 3; i++)
-	{
-		strcpy(serverD[i].userPhone, "");
-		strcpy(serverD[i].userLocation.ipAddress, "");
-	}
-
 	/* Inicia o semáforo mutex */
 	sem_init(&mutex, 0, 1);
 
@@ -132,22 +136,36 @@ int main(int argc, char *argv[])
 	/* Fecha o socket aguardando por conex�es */
 	close(s);
 
+	/* Encerra o semáforo */
+	sem_destroy(&mutex);
+
 	printf("Servidor terminou com sucesso.\n");
 	exit(0);
 }
 
 int searchPhoneNumber(char phoneNumber[]) {
-	for(int sizeOfServer = 0; sizeOfServer < 3; sizeOfServer++) 
-	{
-		if(strcmp(serverD[sizeOfServer].userPhone, phoneNumber) == 0) 
+	data *tmp = users;
+	while(tmp != NULL){
+		if(tmp->userPhone != NULL && strcmp(tmp->userPhone, phoneNumber) == 0) 
 		{
 			printf("Encontrado telefone igual\n");
 			return 1;
 		}
-		
+		tmp = tmp->prox;
 	}
 
 	return 0;
+}
+
+void insertUser(char phoneNumber[], char ip[], int port) {
+	data *newUser=(data *) malloc(sizeof(data));
+	data *oldHead = users->prox;
+
+	strcpy(newUser->userPhone, phoneNumber);
+	strcpy(newUser->userLocation.ipAddress, ip);
+	newUser->userLocation.port = port;
+	users->prox = newUser;
+	newUser->prox = oldHead;
 }
 
 void *funcThread(void *nsClient)
@@ -171,18 +189,9 @@ void *funcThread(void *nsClient)
 		int search = searchPhoneNumber(clientData);
 		if(search == 0)
 		{
-			for(int sizeOfServer = 0; sizeOfServer < 3; sizeOfServer++) 
-			{
-				if(strcmp(serverD[sizeOfServer].userPhone, "") == 0)
-				{
-					strcpy(serverD[sizeOfServer].userPhone, clientData);
-					strcpy(serverD[sizeOfServer].userLocation.ipAddress, inet_ntoa(client.sin_addr));
-					serverD[sizeOfServer].userLocation.port = ntohs(client.sin_port);
-
-					sendbuf = 'S';
-					break;
-				}
-			}
+			
+			insertUser(clientData, inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+			sendbuf = 'S';
 		}
 		else
 		{
