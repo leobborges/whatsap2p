@@ -124,7 +124,7 @@ void addContactGroup(){
 	__fpurge(stdin);
 	fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
 
-	if(strlen(nomeGrupo) != 0){
+	if(strlen(nomeGrupo) != 1){
 		arquivo = fopen("grupos.txt", "a");
 		fprintf(arquivo, "%s", nomeGrupo);
 	}else{
@@ -138,7 +138,7 @@ void addContactGroup(){
 		__fpurge(stdin);
 		fgets(numero, sizeof(numero), stdin);
 
-		if(strlen(numero) != 0){
+		if(strlen(numero) != 1){
 			fprintf(arquivo, "%s", numero);
 		}else{
 			printf("O contato nao pode ser nulo\n");
@@ -161,7 +161,7 @@ void showMenu(int s) {
 		printf("2) Adicionar Contato\n");
 		printf("3) Visualizar Contatos\n");
 		printf("4) Adicionar Grupo de Contatos\n");
-		printf("5) Visualizar Grupo de Contatos\n");
+		printf("5) Visualizar Grupos de Contatos\n");
 		printf("6) Sair\n\n");
 		printf("Digite a opcao escolhida:\n");
 		__fpurge(stdin);
@@ -180,7 +180,7 @@ void showMenu(int s) {
 			addContactGroup();
 		}
 		else if(option == 5) {
-
+			showGroupContacts();
 		}
 		else if(option == 6) {
 			char rcvMessage;
@@ -261,5 +261,37 @@ void showContacts() {
 		}
 	}
 			
+	fclose(fp);
+}
+
+void showGroupContacts(){
+	FILE *fp;
+	char str[100];
+	char* filename = "grupos.txt";
+	int organizer = 0;
+			 
+	fp = fopen(filename, "r");
+	if (fp == NULL){
+		printf("Could not open file %s",filename);
+		exit(7);
+	}
+
+	printf("Lista de Contatos:\n\n");
+
+	while (fgets(str, 100, fp) != NULL){
+				
+		if(organizer == 0){
+			printf("Nome do grupo: %s", str);
+			organizer=1;
+		}
+		else if(strlen(str) != 1){
+			printf("Telefone %i: %s",organizer, str);
+			organizer++;
+		}
+		else{
+			printf("\n");
+			organizer = 0;
+		}
+	}
 	fclose(fp);
 }
