@@ -110,6 +110,46 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+void adicionarGrupoContatos(){
+	FILE * arquivo;
+	char numero[15];
+	char nomeGrupo[50];
+	char sair = 's';
+	char leitura[100];
+	int comparer = 1;
+
+	printf("Digite o nome do grupo:\n");	
+	__fpurge(stdin);
+	fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
+
+	if(strlen(nomeGrupo) != 0){
+		arquivo = fopen("grupos.txt", "a");
+		fprintf(arquivo, "%s", nomeGrupo);
+	}else{
+		printf("O nome do grupo nao pode ser nulo\n");
+		exit(7);
+	}
+	
+	while(sair =='s'){
+		strcpy(numero, "");
+		printf("Digite o numero que deseja adicionar:\n");	
+		__fpurge(stdin);
+		fgets(numero, sizeof(numero), stdin);
+
+		if(strlen(numero) != 0){
+			fprintf(arquivo, "%s", numero);
+		}else{
+			printf("O contato nao pode ser nulo\n");
+			exit(7);
+		}
+
+		printf("\nDeseja inserir outro numero? (S/N)\n");
+		scanf("%c", &sair);
+	} 
+	fputc('\n', arquivo);
+	fclose(arquivo);
+}
+
 void exibirMenu(int s) {
 	int option = 0;
 	do
@@ -126,7 +166,7 @@ void exibirMenu(int s) {
 		scanf("%d", &option);
 
 		if(option == 1) {
-
+			
 		}
 		else if(option == 2) {
 			adicionarContato();
@@ -135,7 +175,7 @@ void exibirMenu(int s) {
 			visualizarContatos();
 		}
 		else if(option == 4) {
-
+			adicionarGrupoContatos();
 		}
 		else if(option == 5) {
 
