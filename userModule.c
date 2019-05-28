@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 void exibirMenu(int s);
+void adicionarContato();
 
 struct sendServerData {
 	char phoneNumber[15];
@@ -128,7 +129,7 @@ void exibirMenu(int s) {
 
 		}
 		else if(option == 2) {
-
+			adicionarContato();
 		}
 		else if(option == 3) {
 
@@ -160,5 +161,34 @@ void exibirMenu(int s) {
 	} while (option != 6);
 }
 
+void adicionarContato() {
+	char contact[20];
+	char phoneNumberContact[15];
+	char fileContent[1000];
+	FILE * file;
 
 
+	printf("Digite o nome do contato:\n");
+	__fpurge(stdin);
+	fgets(contact, sizeof(contact), stdin);
+
+	printf("Digite o telefone do contato:\n");
+	__fpurge(stdin);
+	fgets(phoneNumberContact, sizeof(phoneNumberContact), stdin);
+
+
+	if ((file = fopen("contatos.txt","r")) == NULL){
+		//Criando o arquivo
+		file = fopen ("contatos.txt","w");
+   	} else {
+		file = fopen ("contatos.txt","a");
+		fscanf(file,"%s", &fileContent);
+	}
+
+	fprintf(file, "%s", contact);
+	fprintf(file, "%s", phoneNumberContact);
+
+	fclose(file);
+
+	printf("\nContato cadastrado!\n\n");
+}
