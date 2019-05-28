@@ -20,6 +20,7 @@ void showMenu(int s);
 void addContact();
 void addContactGroup();
 void showContacts();
+void showGroupContacts();
 
 struct sendServerData {
 	char phoneNumber[15];
@@ -276,21 +277,25 @@ void showGroupContacts(){
 		exit(7);
 	}
 
-	printf("Lista de Contatos:\n\n");
-
-	while (fgets(str, 100, fp) != NULL){
-				
-		if(organizer == 0){
-			printf("Nome do grupo: %s", str);
-			organizer=1;
-		}
-		else if(strlen(str) != 1){
-			printf("Telefone %i: %s",organizer, str);
-			organizer++;
-		}
-		else{
-			printf("\n");
-			organizer = 0;
+	if (fgets(str, 100, fp) == NULL){
+		printf("Nao ha grupos de contatos salvos.\n\n");
+	}else{
+		printf("Lista de Contatos:\n\n");
+		
+		while (fgets(str, 100, fp) != NULL){
+					
+			if(organizer == 0){
+				printf("Nome do grupo: %s", str);
+				organizer=1;
+			}
+			else if(strlen(str) != 1){
+				printf("Telefone %i: %s",organizer, str);
+				organizer++;
+			}
+			else{
+				printf("\n");
+				organizer = 0;
+			}
 		}
 	}
 	fclose(fp);
