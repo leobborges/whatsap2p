@@ -16,8 +16,10 @@
 #include <string.h>
 #include <unistd.h>
 
-void exibirMenu(int s);
-void adicionarContato();
+void showMenu(int s);
+void addContact();
+void addContactGroup();
+void showContacts();
 
 struct sendServerData {
 	char phoneNumber[15];
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	exibirMenu(s);
+	showMenu(s);
 
 	/* Fecha o socket */
 	close(s);
@@ -110,7 +112,7 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
-void adicionarGrupoContatos(){
+void addContactGroup(){
 	FILE * arquivo;
 	char numero[15];
 	char nomeGrupo[50];
@@ -150,7 +152,7 @@ void adicionarGrupoContatos(){
 	fclose(arquivo);
 }
 
-void exibirMenu(int s) {
+void showMenu(int s) {
 	int option = 0;
 	do
 	{
@@ -169,13 +171,13 @@ void exibirMenu(int s) {
 			
 		}
 		else if(option == 2) {
-			adicionarContato();
+			addContact();
 		}
 		else if(option == 3) {
-			visualizarContatos();
+			showContacts();
 		}
 		else if(option == 4) {
-			adicionarGrupoContatos();
+			addContactGroup();
 		}
 		else if(option == 5) {
 
@@ -201,7 +203,7 @@ void exibirMenu(int s) {
 	} while (option != 6);
 }
 
-void adicionarContato() {
+void addContact() {
 	char contact[20];
 	char phoneNumberContact[15];
 	char fileContent[1000];
@@ -222,7 +224,7 @@ void adicionarContato() {
 		file = fopen ("contatos.txt","w");
    	} else {
 		file = fopen ("contatos.txt","a");
-		fscanf(file,"%s", &fileContent);
+		fscanf(file,"%s", fileContent);
 	}
 
 	fprintf(file, "%s", contact);
@@ -233,7 +235,7 @@ void adicionarContato() {
 	printf("\nContato cadastrado!\n\n");
 }
 
-void visualizarContatos(){
+void showContacts() {
 	FILE *fp;
 	char str[100];
 	char* filename = "contatos.txt";
