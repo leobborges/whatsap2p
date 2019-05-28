@@ -132,7 +132,7 @@ void exibirMenu(int s) {
 			adicionarContato();
 		}
 		else if(option == 3) {
-
+			visualizarContatos();
 		}
 		else if(option == 4) {
 
@@ -191,4 +191,33 @@ void adicionarContato() {
 	fclose(file);
 
 	printf("\nContato cadastrado!\n\n");
+}
+
+void visualizarContatos(){
+	FILE *fp;
+	char str[100];
+	char* filename = "contatos.txt";
+	int organizer = 0;
+			 
+	fp = fopen(filename, "r");
+	if (fp == NULL){
+		printf("Could not open file %s",filename);
+		exit(7);
+	}
+
+	printf("Lista de Contatos:\n\n");
+
+	while (fgets(str, 100, fp) != NULL){
+				
+		if(organizer == 0){
+			printf("Nome: %s", str);
+			organizer++;
+		}
+		else if(organizer == 1){
+			printf("Telefone: %s\n\n", str);
+			organizer = 0;
+		}
+	}
+			
+	fclose(fp);
 }
