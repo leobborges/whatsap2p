@@ -18,6 +18,13 @@
 
 void exibirMenu(int s);
 
+struct sendServerData {
+	char phoneNumber[15];
+	int option;
+};
+
+struct sendServerData data;
+
 /* Cliente TCP */
 int main(int argc, char *argv[])
 {
@@ -33,20 +40,19 @@ int main(int argc, char *argv[])
 	/*
 	* O primeiro argumento (argv[1]) � o hostname do servidor.
 	* O segundo argumento (argv[2]) � a porta do servidor.
-	* O terceiro argumento (argv[3]) � nome do cliente.
 	*/
 	if (argc != 3)
 	{
-	fprintf(stderr, "Use: %s hostname porta\n", argv[0]);
-	exit(1);
+		fprintf(stderr, "Use: %s hostname porta\n", argv[0]);
+		exit(1);
 	}
 
 	/* Obtendo o endere�o IP do servidor */
 	hostnm = gethostbyname(argv[1]);
 	if (hostnm == (struct hostent *)0)
 	{
-	fprintf(stderr, "Gethostbyname failed\n");
-	exit(2);
+		fprintf(stderr, "Gethostbyname failed\n");
+		exit(2);
 	}
 	port = (unsigned short)atoi(argv[2]);
 
@@ -58,15 +64,15 @@ int main(int argc, char *argv[])
 	/* Cria um socket TCP (stream) */
 	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0)
 	{
-	perror("Socket()");
-	exit(3);
+		perror("Socket()");
+		exit(3);
 	}
 
 	/* Estabelece conex�o com o servidor */
 	if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0)
 	{
-	perror("Connect()");
-	exit(4);
+		perror("Connect()");
+		exit(4);
 	}
 
 	while(recvbuf != 'S')
@@ -75,8 +81,11 @@ int main(int argc, char *argv[])
 		__fpurge(stdin);
 		fgets(phoneNumber, sizeof(phoneNumber), stdin);
 
+		strcpy(data.phoneNumber, phoneNumber);
+		data.option = 0;
+
 		/* Envia a mensagem no buffer de envio para o servidor */
-		if (send(s, &phoneNumber, sizeof(phoneNumber), 0) < 0)
+		if (send(s, &data, sizeof(data), 0) < 0)
 		{
 			perror("Send()");
 			exit(5);
@@ -131,10 +140,10 @@ void exibirMenu(int s) {
 
 		}
 		else if(option == 6) {
-			char quitMessage = 'Q';
 			char rcvMessage;
+			data.option = option;
 			/* Envia a mensagem para o servidor para remover */
-			if (send(s, &quitMessage, sizeof(quitMessage), 0) < 0)
+			if (send(s, &data, sizeof(data), 0) < 0)
 			{
 				perror("Send()");
 				exit(5);
