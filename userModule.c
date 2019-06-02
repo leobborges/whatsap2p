@@ -16,18 +16,27 @@
 #include <string.h>
 #include <unistd.h>
 
-void showMenu(int s);
-void addContact();
-void addContactGroup();
-void showContacts();
-void showGroupContacts();
-
 struct sendServerData {
 	char phoneNumber[15];
 	int option;
 };
 
+struct rcvServerData {
+	char ip[15];
+	int port;
+};
+
 struct sendServerData data;
+// Numero de telefone do usuario
+char phoneNumber[15];
+
+void addContact();
+void addContactGroup();
+struct rcvServerData getUserInfo(int s, char phoneNumber[]);
+void showContacts();
+void showGroupContacts();
+void showMenu(int s);
+void showMessageMenu(int s);
 
 /* Cliente TCP */
 int main(int argc, char *argv[])
@@ -37,9 +46,6 @@ int main(int argc, char *argv[])
 	struct sockaddr_in server;
 	int s;
 	char recvbuf;
-
-	// Numero de telefone do usuario
-	char phoneNumber[15];
 
 	/*
 	* O primeiro argumento (argv[1]) � o hostname do servidor.
@@ -84,6 +90,7 @@ int main(int argc, char *argv[])
 		printf("Insira o seu numero de telefone para entrar no Whatsap2p:\n");
 		__fpurge(stdin);
 		fgets(phoneNumber, sizeof(phoneNumber), stdin);
+		strtok(phoneNumber, "\n");
 
 		strcpy(data.phoneNumber, phoneNumber);
 		data.option = 0;
@@ -169,7 +176,7 @@ void showMenu(int s) {
 		scanf("%d", &option);
 
 		if(option == 1) {
-			
+			showMessageMenu(s);
 		}
 		else if(option == 2) {
 			addContact();
@@ -186,6 +193,7 @@ void showMenu(int s) {
 		else if(option == 6) {
 			char rcvMessage;
 			data.option = option;
+			strcpy(data.phoneNumber, phoneNumber);
 			/* Envia a mensagem para o servidor para remover */
 			if (send(s, &data, sizeof(data), 0) < 0)
 			{
@@ -300,3 +308,72 @@ void showGroupContacts(){
 	}
 	fclose(fp);
 }
+
+void showMessageMenu(int s) {
+	int messageOption = 0;
+			
+	do {
+		system("clear");
+		printf("1) Enviar mensagem individualmente.\n");
+		printf("2) Enviar mensagem para grupo.\n");
+		printf("3) Voltar\n");
+		printf("Digite a opcao desejada para o envio de mensagem: \n");
+
+		__fpurge(stdin);
+		scanf("%d", &messageOption);
+	} while (messageOption < 1 && messageOption > 3);
+
+	if (messageOption == 1) {
+		char contact[20];
+		printf("Para quem deseja enviar a mensagem?\n");
+		__fpurge(stdin);
+		fgets(contact, sizeof(contact), stdin);
+		strtok(contact, "\n");
+		
+
+		// [WHATS-012] função que buscaria o "contact" no arquivo de contatos e retornaria o telefone
+		struct rcvServerData userInfo;
+		userInfo = getUserInfo(s, contact);
+		 
+	}
+	else if (messageOption == 2) {
+		char group[20];
+		printf("Para que grupo deseja enviar a mensagem?\n");
+		__fpurge(stdin);
+		fgets(group, sizeof(group), stdin);
+		strtok(group, "\n");
+
+		// [WHATS-013] função que buscaria o "group" no arquivo de grupos e retornaria o todos os telefones e/ou contatos
+		// chamaria a função criada na tarefa [WHATS-012], para retornar os telefones daqueles que são contatos
+		// entraria em um loop que solicita as informações no servidor, recebe e envia a mensagem, até que a lista de telefones acabe.
+	}
+}
+
+struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
+	struct rcvServerData rcvData;
+	data.option = 1;
+	strcpy(data.phoneNumber, phoneNumber);
+	/* Envia a mensagem para o servidor para remover */
+	if (send(s, &data, sizeof(data), 0) < 0)
+	{
+		perror("Send()");
+		exit(5);
+	}
+	printf("Buscando dados no servidor...\n");
+	/* Recebe a mensagem do servidor no buffer de recep��o */
+	if (recv(s, &rcvData, sizeof(rcvData), 0) < 0)
+	{
+		perror("Recv()");
+		exit(6);
+	}
+	
+	if(rcvData.port > 0) {
+		/* Print auxiliar enquanto a função de enviar a mensagem não for desenvolvida */
+		printf("\nUsuário online:\nTelefone: %s\nEndereço de IP: %s\nPorta: %d\n\n", data.phoneNumber, rcvData.ip, rcvData.port);
+	} 
+	else {
+		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
+	}
+}
+
+

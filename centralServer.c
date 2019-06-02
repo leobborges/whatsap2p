@@ -42,12 +42,13 @@ data *users;
 
 /* Semáforo Mutex */
 sem_t mutex;
-sem_t mutex2;
 
 void *funcThread(void *nsClient);
 int searchPhoneNumber(char phoneNumber[]);
+struct location searchUserLocation(char phoneNumber[]);
 void insertUser(char phoneNumber[], char ip[], int port);
 void searchAndRemoveUser(char phoneNumber[]);
+void debug();
 
 /* Servidor TCP */
 int main(int argc, char *argv[])
@@ -114,7 +115,6 @@ int main(int argc, char *argv[])
 
 	/* Inicia o semáforo mutex */
 	sem_init(&mutex, 0, 1);
-	sem_init(&mutex2, 0, 1);
 
 	while(1){
 		/*
@@ -145,7 +145,6 @@ int main(int argc, char *argv[])
 
 	/* Encerra o semáforo */
 	sem_destroy(&mutex);
-	sem_destroy(&mutex2);
 
 	printf("Servidor terminou com sucesso.\n");
 	exit(0);
@@ -165,6 +164,28 @@ int searchPhoneNumber(char phoneNumber[]) {
 	return 0;
 }
 
+struct location searchUserLocation(char phoneNumber[]) {
+	struct location userLocation;
+	data *tmp = users;
+	
+	userLocation.port = -1;
+	strcpy(userLocation.ipAddress, "");
+
+	while(tmp != NULL){
+		if(tmp->userPhone != NULL && strcmp(tmp->userPhone, phoneNumber) == 0) 
+		{
+			printf("Usuário %s online. Retornando dados...\n", phoneNumber);
+			userLocation.port = tmp->userLocation.port;
+			strcpy(userLocation.ipAddress, tmp->userLocation.ipAddress);	
+			return userLocation;
+		}
+		tmp = tmp->prox;
+	}
+
+	printf("Nenhum usuário encontrado.\n");
+	return userLocation;
+}
+
 void insertUser(char phoneNumber[], char ip[], int port) {
 	data *newUser=(data *) malloc(sizeof(data));
 	data *oldHead = users->prox;
@@ -178,17 +199,30 @@ void insertUser(char phoneNumber[], char ip[], int port) {
 
 void searchAndRemoveUser(char phoneNumber[]) {
 	data *user, *nextUser;
+
 	user = users;
 	nextUser = users->prox;
 	while (nextUser != NULL && strcmp(nextUser->userPhone,phoneNumber) != 0) {
 		user = nextUser;
 		nextUser = nextUser->prox;
 	}
-	if (nextUser != NULL) {
+	if (strcmp(nextUser->userPhone,phoneNumber) == 0) {
 		user->prox = nextUser->prox;
-		printf("Cliente de Endereço de IP: %s - Porta: %d - Telefone: %s -  Saindo...\n", nextUser->userLocation.ipAddress, nextUser->userLocation.port, nextUser->userPhone);
+		printf("Client IP Address: %s - Port: %d - Leaving...\n", nextUser->userLocation.ipAddress, nextUser->userLocation.port);
 		free(nextUser);
 	}
+
+}
+
+void debug() {
+	printf("[DEBUG]\n");
+	data *user;
+	user = users;
+	while (user != NULL) {
+		printf("[%s] -> ", user->userPhone);
+		user = user->prox;
+	}
+	printf("\n[DEBUG]\n");
 }
 
 void *funcThread(void *nsClient)
@@ -197,6 +231,7 @@ void *funcThread(void *nsClient)
 	
 	char sendbuf;
 	struct rcvClientData clientData;
+	struct location userLocation;
 	char ip[16];
 	strcpy(ip, inet_ntoa(client.sin_addr));
 
@@ -229,6 +264,13 @@ void *funcThread(void *nsClient)
 
 			sem_post(&mutex);
 		}
+		else if (clientData.option == 1) {
+			sem_wait(&mutex);
+
+			userLocation = searchUserLocation(clientData.phoneNumber);
+
+			sem_post(&mutex);
+		}
 		else if (clientData.option == 6) {
 			sem_wait(&mutex);
 			searchAndRemoveUser(clientData.phoneNumber);
@@ -236,12 +278,24 @@ void *funcThread(void *nsClient)
 			sendbuf = 'Q';
 		}
 
-		/* Envia uma mensagem ao cliente atrav�s do socket conectado */
-		if (send(ns, &sendbuf, sizeof(sendbuf), 0) < 0)
-		{
-			perror("Send()");
-			exit(7);
+		if (clientData.option != 1) {
+			/* Envia uma mensagem ao cliente atrav�s do socket conectado */
+			if (send(ns, &sendbuf, sizeof(sendbuf), 0) < 0)
+			{
+				perror("Send()");
+				exit(7);
+			}
 		}
+
+		else {
+			if (send(ns, &userLocation, sizeof(userLocation), 0) < 0)
+			{
+				perror("Send()");
+				exit(7);
+			}
+		}
+
+		
 	} while(sendbuf != 'Q');
 
 	/* Fecha o socket conectado ao cliente */
