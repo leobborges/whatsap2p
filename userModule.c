@@ -172,6 +172,7 @@ void showMenu(int s) {
 		printf("5) Visualizar Grupos de Contatos\n");
 		printf("6) Sair\n\n");
 		printf("Digite a opcao escolhida:\n");
+
 		__fpurge(stdin);
 		scanf("%d", &option);
 
@@ -214,27 +215,41 @@ void showMenu(int s) {
 
 void addContact() {
 	char contact[20];
+	char str[20];
 	char phoneNumberContact[15];
 	char fileContent[1000];
 	FILE * file;
+	int flag;
 
+	do{
+		flag = 0;
+		printf("Digite o nome do contato:\n");
+		__fpurge(stdin);
 
-	printf("Digite o nome do contato:\n");
-	__fpurge(stdin);
-	fgets(contact, sizeof(contact), stdin);
+		fgets(contact, sizeof(contact), stdin);
+
+		file = fopen("contatos.txt","r");
+		if (file == NULL){
+			break;
+		}
+		else {
+			while (fgets(str, 100, file) != NULL){
+				if(strcmp(str, contact) == 0){
+					flag = 1;
+					printf("\nContato já existente, digite outro nome..\n\n");
+				}
+			}
+		}
+		fclose(file);
+
+	}while(flag == 1);
 
 	printf("Digite o telefone do contato:\n");
 	__fpurge(stdin);
+
 	fgets(phoneNumberContact, sizeof(phoneNumberContact), stdin);
 
-
-	if ((file = fopen("contatos.txt","r")) == NULL){
-		//Criando o arquivo
-		file = fopen ("contatos.txt","w");
-   	} else {
-		file = fopen ("contatos.txt","a");
-		fscanf(file,"%s", fileContent);
-	}
+	file = fopen("contatos.txt", "a");
 
 	fprintf(file, "%s", contact);
 	fprintf(file, "%s", phoneNumberContact);
@@ -252,25 +267,25 @@ void showContacts() {
 			 
 	fp = fopen(filename, "r");
 	if (fp == NULL){
-		printf("Could not open file %s",filename);
-		exit(7);
+		printf("\nNão existem contatos cadatrados.\n\n");
 	}
+	else{
+		printf("Lista de Contatos:\n\n");
 
-	printf("Lista de Contatos:\n\n");
-
-	while (fgets(str, 100, fp) != NULL){
-				
-		if(organizer == 0){
-			printf("Nome: %s", str);
-			organizer++;
+		while (fgets(str, sizeof(str), fp) != NULL){
+					
+			if(organizer == 0){
+				printf("Nome: %s", str);
+				organizer++;
+			}
+			else if(organizer == 1){
+				printf("Telefone: %s\n\n", str);
+				organizer = 0;
+			}
 		}
-		else if(organizer == 1){
-			printf("Telefone: %s\n\n", str);
-			organizer = 0;
-		}
+	fclose(fp);
 	}
 			
-	fclose(fp);
 }
 
 void showGroupContacts(){
@@ -375,5 +390,3 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
 	}
 }
-
-
