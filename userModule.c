@@ -173,6 +173,7 @@ void showMenu(int s) {
 		printf("6) Sair\n\n");
 		printf("Digite a opcao escolhida:\n");
 		__fpurge(stdin);
+		flush_in();
 		scanf("%d", &option);
 
 		if(option == 1) {
@@ -214,19 +215,39 @@ void showMenu(int s) {
 
 void addContact() {
 	char contact[20];
+	char str[20];
 	char phoneNumberContact[15];
 	char fileContent[1000];
 	FILE * file;
+	int flag;
 
+	do{
+		flag = 0;
+		printf("Digite o nome do contato:\n");
+		__fpurge(stdin);
 
-	printf("Digite o nome do contato:\n");
-	__fpurge(stdin);
-	fgets(contact, sizeof(contact), stdin);
+		fgets(contact, sizeof(contact), stdin);
+
+		file = fopen("contatos.txt","r");
+		if (file == NULL){
+			break;
+		}
+		else {
+			while (fgets(str, 100, file) != NULL){
+				if(strcmp(str, contact) == 0)
+					flag = 1;			
+			}
+		}
+		fclose(file);
+
+	}while(flag == 1);
 
 	printf("Digite o telefone do contato:\n");
 	__fpurge(stdin);
+	flush_in();
 	fgets(phoneNumberContact, sizeof(phoneNumberContact), stdin);
 
+	file = fopen("contatos.txt", "a");
 
 	if ((file = fopen("contatos.txt","r")) == NULL){
 		//Criando o arquivo
@@ -253,20 +274,20 @@ void showContacts() {
 	fp = fopen(filename, "r");
 	if (fp == NULL){
 		printf("Could not open file %s",filename);
-		exit(7);
 	}
+	else{
+		printf("Lista de Contatos:\n\n");
 
-	printf("Lista de Contatos:\n\n");
-
-	while (fgets(str, 100, fp) != NULL){
-				
-		if(organizer == 0){
-			printf("Nome: %s", str);
-			organizer++;
-		}
-		else if(organizer == 1){
-			printf("Telefone: %s\n\n", str);
-			organizer = 0;
+		while (fgets(str, sizeof(str), fp) != NULL){
+					
+			if(organizer == 0){
+				printf("Nome: %s", str);
+				organizer++;
+			}
+			else if(organizer == 1){
+				printf("Telefone: %s\n\n", str);
+				organizer = 0;
+			}
 		}
 	}
 			
@@ -375,5 +396,3 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
 	}
 }
-
-
