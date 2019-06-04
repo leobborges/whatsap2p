@@ -231,37 +231,50 @@ void addContactGroup(){
 	char numero[15];
 	char nomeGrupo[50];
 	char sair = 's';
-	char leitura[100];
-	int comparer = 1;
+	int flag = 0;
+	char str[100];
+	char filename[30];
 
-	printf("Digite o nome do grupo:\n");	
-	__fpurge(stdin);
-	fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
+	strcpy(filename, "");
+	strcat(filename, phoneNumber);
+	strcat(filename, "-grupos.txt");
 
-	if(strlen(nomeGrupo) != 1){
-		arquivo = fopen("grupos.txt", "a");
-		fprintf(arquivo, "%s", nomeGrupo);
-	}else{
-		printf("O nome do grupo nao pode ser nulo\n");
-		exit(7);
-	}
+	do{
+		flag = 0;
 	
-	while(sair =='s'){
-		strcpy(numero, "");
-		printf("Digite o numero que deseja adicionar:\n");	
+		printf("Digite o nome do grupo:\n");	
 		__fpurge(stdin);
-		fgets(numero, sizeof(numero), stdin);
+		fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
 
-		if(strlen(numero) != 1){
-			fprintf(arquivo, "%s", numero);
-		}else{
-			printf("O contato nao pode ser nulo\n");
-			exit(7);
+		arquivo = fopen(filename,"r");
+		if (arquivo == NULL){
+			break;
 		}
+		else {
+			while (fgets(str, 100, arquivo) != NULL){
+				if(strcmp(str, nomeGrupo) == 0){
+					flag = 1;
+					printf("\nGrupo já existente, digite outro nome..\n\n");
+				}
+			}
+		}
+		fclose(arquivo);
+	}while(flag == 1);
+	
+	arquivo = fopen(filename, "a");
+	fprintf(arquivo, "%s", nomeGrupo);
 
+	while(sair =='s'){
+		do{
+			strcpy(numero, "");
+			printf("\nDigite o numero que deseja adicionar:\n");	
+			__fpurge(stdin);
+			fgets(numero, sizeof(numero), stdin);
+		}while(strlen(numero) <= 1);
+
+		fprintf(arquivo, "%s", numero);
 		printf("\nDeseja inserir outro numero? (S/N)\n");
 		scanf("%c", &sair);
-
 	} 
 	fputc('\n', arquivo);
 	fclose(arquivo);
@@ -303,21 +316,20 @@ void showContacts() {
 void showGroupContacts(){
 	FILE *fp;
 	char str[100];
-	char* filename = "grupos.txt";
+	char filename[30];
 	int organizer = 0;
-			 
+
+	strcpy(filename, "");
+	strcat(filename, phoneNumber);
+	strcat(filename, "-grupos.txt");
+
 	fp = fopen(filename, "r");
 	if (fp == NULL){
-		printf("Could not open file %s",filename);
-		exit(7);
-	}
-
-	if (fgets(str, 100, fp) == NULL){
-		printf("Nao ha grupos de contatos salvos.\n\n");
+		printf("Nao ha grupos salvos.\n\n");
 	}else{
-		printf("Lista de Contatos:\n\n");
+		printf("Lista de Grupos:\n\n");
 		
-		while (fgets(str, 100, fp) != NULL){
+		while (fgets(str, sizeof(str), fp) != NULL){
 					
 			if(organizer == 0){
 				printf("Nome do grupo: %s", str);
@@ -332,8 +344,8 @@ void showGroupContacts(){
 				organizer = 0;
 			}
 		}
+		fclose(fp);
 	}
-	fclose(fp);
 }
 
 void showMessageMenu(int s) {
