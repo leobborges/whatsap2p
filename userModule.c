@@ -44,7 +44,6 @@ int p2ps;
 int userSocket;
 int userSocketPort;
 
-void *funcThread(void *nns);
 void addContact();
 void addContactGroup();
 struct rcvServerData getUserInfo(int s, char phoneNumber[]);
@@ -53,6 +52,7 @@ void showContacts();
 void showGroupContacts();
 void showMenu(int s);
 void showMessageMenu(int s);
+void *funcThread(void *nns);
 
 /* Cliente TCP */
 int main(int argc, char *argv[])
@@ -299,6 +299,70 @@ void addContactGroup(){
 	fclose(arquivo);
 }
 
+struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
+	struct rcvServerData rcvData;
+	data.option = 1;
+	strcpy(data.phoneNumber, phoneNumber);
+	/* Envia a mensagem para o servidor para remover */
+	if (send(s, &data, sizeof(data), 0) < 0)
+	{
+		perror("Send()");
+		exit(5);
+	}
+	printf("Buscando dados no servidor...\n");
+	/* Recebe a mensagem do servidor no buffer de recep��o */
+	if (recv(s, &rcvData, sizeof(rcvData), 0) < 0)
+	{
+		perror("Recv()");
+		exit(6);
+	}
+	
+	if(rcvData.port > 0) {
+		return rcvData;
+	} 
+	else {
+		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
+	}
+}
+
+void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
+	struct sockaddr_in p2pServer;
+	struct messageData message;
+	int p2psocket;
+
+	printf("Digite a mensagem:\n");
+	__fpurge(stdin);
+	fgets(message.message, sizeof(message.message), stdin);
+	strtok(message.message, "\n");
+
+	strcpy(message.senderPhoneNumber, phoneNumber);
+
+	p2pServer.sin_family = AF_INET;
+	p2pServer.sin_port = userLocation.port;
+	p2pServer.sin_addr = userLocation.ip;
+
+	/* Cria um socket TCP (stream) */
+	if ((p2psocket = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("Socket()");
+		exit(3);
+	}
+	
+	/* Estabelece conex�o com um outro cliente */
+	if (connect(p2psocket, (struct sockaddr *)&p2pServer, sizeof(p2pServer)) < 0)
+	{
+		perror("Connect()");
+		exit(4);
+	}
+	printf("\nEnviando mensagem...\n");
+	if (send(p2psocket, &message, sizeof(message), 0) < 0) {
+            perror("Send()");
+            exit(5);
+        }
+	printf("Mensagem Enviada...\n");
+	sleep(1);
+}
+
 void showContacts() {
 	FILE *fp;
 	char str[100];
@@ -409,70 +473,6 @@ void showMessageMenu(int s) {
 		// chamaria a função criada na tarefa [WHATS-012], para retornar os telefones daqueles que são contatos
 		// entraria em um loop que solicita as informações no servidor, recebe e envia a mensagem, até que a lista de telefones acabe.
 	}
-}
-
-struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
-	struct rcvServerData rcvData;
-	data.option = 1;
-	strcpy(data.phoneNumber, phoneNumber);
-	/* Envia a mensagem para o servidor para remover */
-	if (send(s, &data, sizeof(data), 0) < 0)
-	{
-		perror("Send()");
-		exit(5);
-	}
-	printf("Buscando dados no servidor...\n");
-	/* Recebe a mensagem do servidor no buffer de recep��o */
-	if (recv(s, &rcvData, sizeof(rcvData), 0) < 0)
-	{
-		perror("Recv()");
-		exit(6);
-	}
-	
-	if(rcvData.port > 0) {
-		return rcvData;
-	} 
-	else {
-		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
-	}
-}
-
-void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
-	struct sockaddr_in p2pServer;
-	struct messageData message;
-	int p2psocket;
-
-	printf("Digite a mensagem:\n");
-	__fpurge(stdin);
-	fgets(message.message, sizeof(message.message), stdin);
-	strtok(message.message, "\n");
-
-	strcpy(message.senderPhoneNumber, phoneNumber);
-
-	p2pServer.sin_family = AF_INET;
-	p2pServer.sin_port = userLocation.port;
-	p2pServer.sin_addr = userLocation.ip;
-
-	/* Cria um socket TCP (stream) */
-	if ((p2psocket = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-	{
-		perror("Socket()");
-		exit(3);
-	}
-	
-	/* Estabelece conex�o com um outro cliente */
-	if (connect(p2psocket, (struct sockaddr *)&p2pServer, sizeof(p2pServer)) < 0)
-	{
-		perror("Connect()");
-		exit(4);
-	}
-	printf("\nEnviando mensagem...\n");
-	if (send(p2psocket, &message, sizeof(message), 0) < 0) {
-            perror("Send()");
-            exit(5);
-        }
-	printf("Mensagem Enviada...\n");
-	sleep(1);
 }
 
 /* Thread responsável pela recepção das mensagens de outros clientes */

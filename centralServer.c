@@ -44,12 +44,12 @@ data *users;
 /* Semáforo Mutex */
 sem_t mutex;
 
-void *funcThread(void *nsClient);
-int searchPhoneNumber(char phoneNumber[]);
-struct location searchUserLocation(char phoneNumber[]);
+void debug();
 void insertUser(char phoneNumber[], struct in_addr ip, int port);
 void searchAndRemoveUser(char phoneNumber[]);
-void debug();
+int searchPhoneNumber(char phoneNumber[]);
+struct location searchUserLocation(char phoneNumber[]);
+void *funcThread(void *nsClient);
 
 /* Servidor TCP */
 int main(int argc, char *argv[])
@@ -151,6 +151,45 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+void debug() {
+	printf("[DEBUG]\n");
+	data *user;
+	user = users;
+	while (user != NULL) {
+		printf("[%s] -> ", user->userPhone);
+		user = user->prox;
+	}
+	printf("\n[DEBUG]\n");
+}
+
+void insertUser(char phoneNumber[], struct in_addr ip, int port) {
+	data *newUser=(data *) malloc(sizeof(data));
+	data *oldHead = users->prox;
+
+	strcpy(newUser->userPhone, phoneNumber);
+	newUser->userLocation.ipAddress = ip;
+	newUser->userLocation.port = port;
+	users->prox = newUser;
+	newUser->prox = oldHead;
+}
+
+void searchAndRemoveUser(char phoneNumber[]) {
+	data *user, *nextUser;
+
+	user = users;
+	nextUser = users->prox;
+	while (nextUser != NULL && strcmp(nextUser->userPhone,phoneNumber) != 0) {
+		user = nextUser;
+		nextUser = nextUser->prox;
+	}
+	if (strcmp(nextUser->userPhone,phoneNumber) == 0) {
+		user->prox = nextUser->prox;
+		printf("Client IP Address: %s - Port: %d - Leaving...\n", inet_ntoa(nextUser->userLocation.ipAddress), nextUser->userLocation.port);
+		free(nextUser);
+	}
+
+}
+
 int searchPhoneNumber(char phoneNumber[]) {
 	data *tmp = users;
 	while(tmp != NULL){
@@ -184,45 +223,6 @@ struct location searchUserLocation(char phoneNumber[]) {
 
 	printf("Nenhum usuário encontrado.\n");
 	return userLocation;
-}
-
-void insertUser(char phoneNumber[], struct in_addr ip, int port) {
-	data *newUser=(data *) malloc(sizeof(data));
-	data *oldHead = users->prox;
-
-	strcpy(newUser->userPhone, phoneNumber);
-	newUser->userLocation.ipAddress = ip;
-	newUser->userLocation.port = port;
-	users->prox = newUser;
-	newUser->prox = oldHead;
-}
-
-void searchAndRemoveUser(char phoneNumber[]) {
-	data *user, *nextUser;
-
-	user = users;
-	nextUser = users->prox;
-	while (nextUser != NULL && strcmp(nextUser->userPhone,phoneNumber) != 0) {
-		user = nextUser;
-		nextUser = nextUser->prox;
-	}
-	if (strcmp(nextUser->userPhone,phoneNumber) == 0) {
-		user->prox = nextUser->prox;
-		printf("Client IP Address: %s - Port: %d - Leaving...\n", inet_ntoa(nextUser->userLocation.ipAddress), nextUser->userLocation.port);
-		free(nextUser);
-	}
-
-}
-
-void debug() {
-	printf("[DEBUG]\n");
-	data *user;
-	user = users;
-	while (user != NULL) {
-		printf("[%s] -> ", user->userPhone);
-		user = user->prox;
-	}
-	printf("\n[DEBUG]\n");
 }
 
 void *funcThread(void *nsClient)
