@@ -21,12 +21,13 @@ struct sockaddr_in client;
 struct rcvClientData {
 	char phoneNumber[15];
 	int option;
+	unsigned short userPort;
 };
 
 struct location
 {
-	char ipAddress[16];
-	int port;
+	struct in_addr ipAddress;
+	unsigned short port;
 };
 
 struct serverData
@@ -46,7 +47,7 @@ sem_t mutex;
 void *funcThread(void *nsClient);
 int searchPhoneNumber(char phoneNumber[]);
 struct location searchUserLocation(char phoneNumber[]);
-void insertUser(char phoneNumber[], char ip[], int port);
+void insertUser(char phoneNumber[], struct in_addr ip, int port);
 void searchAndRemoveUser(char phoneNumber[]);
 void debug();
 
@@ -169,14 +170,13 @@ struct location searchUserLocation(char phoneNumber[]) {
 	data *tmp = users;
 	
 	userLocation.port = -1;
-	strcpy(userLocation.ipAddress, "");
 
 	while(tmp != NULL){
 		if(tmp->userPhone != NULL && strcmp(tmp->userPhone, phoneNumber) == 0) 
 		{
 			printf("Usuário %s online. Retornando dados...\n", phoneNumber);
 			userLocation.port = tmp->userLocation.port;
-			strcpy(userLocation.ipAddress, tmp->userLocation.ipAddress);	
+			userLocation.ipAddress = tmp->userLocation.ipAddress;
 			return userLocation;
 		}
 		tmp = tmp->prox;
@@ -186,12 +186,12 @@ struct location searchUserLocation(char phoneNumber[]) {
 	return userLocation;
 }
 
-void insertUser(char phoneNumber[], char ip[], int port) {
+void insertUser(char phoneNumber[], struct in_addr ip, int port) {
 	data *newUser=(data *) malloc(sizeof(data));
 	data *oldHead = users->prox;
 
 	strcpy(newUser->userPhone, phoneNumber);
-	strcpy(newUser->userLocation.ipAddress, ip);
+	newUser->userLocation.ipAddress = ip;
 	newUser->userLocation.port = port;
 	users->prox = newUser;
 	newUser->prox = oldHead;
@@ -208,7 +208,7 @@ void searchAndRemoveUser(char phoneNumber[]) {
 	}
 	if (strcmp(nextUser->userPhone,phoneNumber) == 0) {
 		user->prox = nextUser->prox;
-		printf("Client IP Address: %s - Port: %d - Leaving...\n", nextUser->userLocation.ipAddress, nextUser->userLocation.port);
+		printf("Client IP Address: %s - Port: %d - Leaving...\n", inet_ntoa(nextUser->userLocation.ipAddress), nextUser->userLocation.port);
 		free(nextUser);
 	}
 
@@ -232,8 +232,8 @@ void *funcThread(void *nsClient)
 	char sendbuf;
 	struct rcvClientData clientData;
 	struct location userLocation;
-	char ip[16];
-	strcpy(ip, inet_ntoa(client.sin_addr));
+	struct in_addr ip;
+	ip = client.sin_addr;
 
 	int port = ntohs(client.sin_port);
 	
@@ -250,11 +250,13 @@ void *funcThread(void *nsClient)
 		if (clientData.option == 0) {
 			sem_wait(&mutex);
 
+			printf("Client IP Address: %s - Phone Number: %s - Available on Port: %d\n", inet_ntoa(ip), clientData.phoneNumber, ntohs(clientData.userPort));
+
 			int search = searchPhoneNumber(clientData.phoneNumber);
 			if(search == 0)
 			{
 				
-				insertUser(clientData.phoneNumber, ip, port);
+				insertUser(clientData.phoneNumber, ip, clientData.userPort);
 				sendbuf = 'S';
 			}
 			else

@@ -10,31 +10,45 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <unistd.h>
+
+struct messageData {
+	char senderPhoneNumber[15];
+	char message[144];
+};
 
 struct sendServerData {
 	char phoneNumber[15];
 	int option;
+	unsigned short userPort;
 };
 
 struct rcvServerData {
-	char ip[15];
-	int port;
+	struct in_addr ip;
+	unsigned short port;
 };
 
 /* Variáveis Globais */
 struct sendServerData data;
-/* Numero de telefone do usuario */
 char phoneNumber[15];
+struct sockaddr_in p2pClient;
+struct sockaddr_in p2pServer;
+struct messageData message;
+int p2ps;
+int userSocket;
+int userSocketPort;
 
-/* Protótipos das funções */
+void *funcThread(void *nns);
 void addContact();
 void addContactGroup();
 struct rcvServerData getUserInfo(int s, char phoneNumber[]);
+void sendMessage(struct rcvServerData userLocation, char phoneNumber[]);
 void showContacts();
 void showGroupContacts();
 void showMenu(int s);
@@ -48,6 +62,10 @@ int main(int argc, char *argv[])
 	struct sockaddr_in server;
 	int s;
 	char recvbuf;
+	pthread_t thread_id;
+
+	int ns;
+	pthread_create(&thread_id, NULL, &funcThread, (void*)&ns);
 
 	/*
 	* O primeiro argumento (argv[1]) � o hostname do servidor.
@@ -96,6 +114,7 @@ int main(int argc, char *argv[])
 
 		strcpy(data.phoneNumber, phoneNumber);
 		data.option = 0;
+		data.userPort = userSocketPort;
 
 		/* Envia a mensagem no buffer de envio para o servidor */
 		if (send(s, &data, sizeof(data), 0) < 0)
@@ -373,6 +392,10 @@ void showMessageMenu(int s) {
 		// [WHATS-012] função que buscaria o "contact" no arquivo de contatos e retornaria o telefone
 		struct rcvServerData userInfo;
 		userInfo = getUserInfo(s, contact);
+
+		/* Print auxiliar enquanto a função de enviar a mensagem não for desenvolvida */
+		// printf("\nUsuário online:\nTelefone: %s\nEndereço de IP: %s\nPorta: %d\n\n", data.phoneNumber, inet_ntoa(userInfo.ip), userInfo.port);
+		sendMessage(userInfo, data.phoneNumber);
 		 
 	}
 	else if (messageOption == 2) {
@@ -407,10 +430,104 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 	}
 	
 	if(rcvData.port > 0) {
-		/* Print auxiliar enquanto a função de enviar a mensagem não for desenvolvida */
-		printf("\nUsuário online:\nTelefone: %s\nEndereço de IP: %s\nPorta: %d\n\n", data.phoneNumber, rcvData.ip, rcvData.port);
+		return rcvData;
 	} 
 	else {
 		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
 	}
 }
+
+void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
+	struct sockaddr_in p2pServer;
+	struct messageData message;
+	int p2psocket;
+
+	printf("Digite a mensagem:\n");
+	__fpurge(stdin);
+	fgets(message.message, sizeof(message.message), stdin);
+	strtok(message.message, "\n");
+
+	strcpy(message.senderPhoneNumber, phoneNumber);
+
+	p2pServer.sin_family = AF_INET;
+	p2pServer.sin_port = userLocation.port;
+	p2pServer.sin_addr = userLocation.ip;
+
+	/* Cria um socket TCP (stream) */
+	if ((p2psocket = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("Socket()");
+		exit(3);
+	}
+	
+	/* Estabelece conex�o com um outro cliente */
+	if (connect(p2psocket, (struct sockaddr *)&p2pServer, sizeof(p2pServer)) < 0)
+	{
+		perror("Connect()");
+		exit(4);
+	}
+	printf("\nEnviando mensagem...\n");
+	if (send(p2psocket, &message, sizeof(message), 0) < 0) {
+            perror("Send()");
+            exit(5);
+        }
+	printf("Mensagem Enviada...\n");
+	sleep(1);
+}
+
+/* Thread responsável pela recepção das mensagens de outros clientes */
+void *funcThread(void *nns) {	
+	/* Cria um socket TCP (stream) para aguardar conex�es */
+	if ((p2ps = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		perror("Socket()");
+		exit(2);
+	}
+
+	p2pServer.sin_family = AF_INET;
+	p2pServer.sin_port = 0;
+	p2pServer.sin_addr.s_addr = INADDR_ANY;
+
+
+	/* Liga o servidor � porta definida anteriormente. */
+	if (bind(p2ps, (struct sockaddr *)&p2pServer, sizeof(p2pServer)) < 0)
+	{
+		perror("Bind()");
+		exit(3);
+	}
+	
+	if (listen(p2ps, 1) != 0)
+	{
+		perror("Listen()");
+		exit(4);
+	}
+
+	int len = sizeof(p2pServer);
+
+	if (getsockname(p2ps, (struct sockaddr *) &p2pServer, &len) == -1){
+		perror("getsockname");
+		exit(1);
+	}
+
+	userSocketPort = p2pServer.sin_port;
+
+	while(1) {
+		int namelen = sizeof(p2pClient);
+		if ((userSocket = accept(p2ps, (struct sockaddr *)&p2pClient, &namelen)) == -1)
+		{
+			perror("Accept()");
+			exit(5);
+		}
+		/* Recebe uma mensagem do cliente atrav�s do novo socket conectado */
+		if (recv(userSocket, &message, sizeof(message), 0) == -1)
+		{
+			perror("Recv()");
+			exit(6);
+		}
+
+		printf("Mensagem de %s: %s\n", message.senderPhoneNumber, message.message);
+
+		close(userSocket);
+	}
+}
+
