@@ -26,10 +26,12 @@ struct rcvServerData {
 	int port;
 };
 
+/* Variáveis Globais */
 struct sendServerData data;
-// Numero de telefone do usuario
+/* Numero de telefone do usuario */
 char phoneNumber[15];
 
+/* Protótipos das funções */
 void addContact();
 void addContactGroup();
 struct rcvServerData getUserInfo(int s, char phoneNumber[]);
@@ -120,46 +122,6 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
-void addContactGroup(){
-	FILE * arquivo;
-	char numero[15];
-	char nomeGrupo[50];
-	char sair = 's';
-	char leitura[100];
-	int comparer = 1;
-
-	printf("Digite o nome do grupo:\n");	
-	__fpurge(stdin);
-	fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
-
-	if(strlen(nomeGrupo) != 1){
-		arquivo = fopen("grupos.txt", "a");
-		fprintf(arquivo, "%s", nomeGrupo);
-	}else{
-		printf("O nome do grupo nao pode ser nulo\n");
-		exit(7);
-	}
-	
-	while(sair =='s'){
-		strcpy(numero, "");
-		printf("Digite o numero que deseja adicionar:\n");	
-		__fpurge(stdin);
-		fgets(numero, sizeof(numero), stdin);
-
-		if(strlen(numero) != 1){
-			fprintf(arquivo, "%s", numero);
-		}else{
-			printf("O contato nao pode ser nulo\n");
-			exit(7);
-		}
-
-		printf("\nDeseja inserir outro numero? (S/N)\n");
-		scanf("%c", &sair);
-	} 
-	fputc('\n', arquivo);
-	fclose(arquivo);
-}
-
 void showMenu(int s) {
 	int option = 0;
 	do
@@ -172,8 +134,8 @@ void showMenu(int s) {
 		printf("5) Visualizar Grupos de Contatos\n");
 		printf("6) Sair\n\n");
 		printf("Digite a opcao escolhida:\n");
+
 		__fpurge(stdin);
-		flush_in();
 		scanf("%d", &option);
 
 		if(option == 1) {
@@ -218,8 +180,12 @@ void addContact() {
 	char str[20];
 	char phoneNumberContact[15];
 	char fileContent[1000];
+	char filename[30];
 	FILE * file;
 	int flag;
+
+	strcat(filename, phoneNumber);
+	strcat(filename, "-contatos.txt");
 
 	do{
 		flag = 0;
@@ -228,14 +194,16 @@ void addContact() {
 
 		fgets(contact, sizeof(contact), stdin);
 
-		file = fopen("contatos.txt","r");
+		file = fopen(filename,"r");
 		if (file == NULL){
 			break;
 		}
 		else {
 			while (fgets(str, 100, file) != NULL){
-				if(strcmp(str, contact) == 0)
-					flag = 1;			
+				if(strcmp(str, contact) == 0){
+					flag = 1;
+					printf("\nContato já existente, digite outro nome..\n\n");
+				}
 			}
 		}
 		fclose(file);
@@ -244,18 +212,10 @@ void addContact() {
 
 	printf("Digite o telefone do contato:\n");
 	__fpurge(stdin);
-	flush_in();
+
 	fgets(phoneNumberContact, sizeof(phoneNumberContact), stdin);
 
-	file = fopen("contatos.txt", "a");
-
-	if ((file = fopen("contatos.txt","r")) == NULL){
-		//Criando o arquivo
-		file = fopen ("contatos.txt","w");
-   	} else {
-		file = fopen ("contatos.txt","a");
-		fscanf(file,"%s", fileContent);
-	}
+	file = fopen(filename, "a");
 
 	fprintf(file, "%s", contact);
 	fprintf(file, "%s", phoneNumberContact);
@@ -265,15 +225,59 @@ void addContact() {
 	printf("\nContato cadastrado!\n\n");
 }
 
+void addContactGroup(){
+	FILE * arquivo;
+	char numero[15];
+	char nomeGrupo[50];
+	char sair = 's';
+	char leitura[100];
+	int comparer = 1;
+
+	printf("Digite o nome do grupo:\n");	
+	__fpurge(stdin);
+	fgets(nomeGrupo, sizeof(nomeGrupo), stdin);
+
+	if(strlen(nomeGrupo) != 1){
+		arquivo = fopen("grupos.txt", "a");
+		fprintf(arquivo, "%s", nomeGrupo);
+	}else{
+		printf("O nome do grupo nao pode ser nulo\n");
+		exit(7);
+	}
+	
+	while(sair =='s'){
+		strcpy(numero, "");
+		printf("Digite o numero que deseja adicionar:\n");	
+		__fpurge(stdin);
+		fgets(numero, sizeof(numero), stdin);
+
+		if(strlen(numero) != 1){
+			fprintf(arquivo, "%s", numero);
+		}else{
+			printf("O contato nao pode ser nulo\n");
+			exit(7);
+		}
+
+		printf("\nDeseja inserir outro numero? (S/N)\n");
+		scanf("%c", &sair);
+
+	} 
+	fputc('\n', arquivo);
+	fclose(arquivo);
+}
+
 void showContacts() {
 	FILE *fp;
 	char str[100];
-	char* filename = "contatos.txt";
+	char filename[30];
 	int organizer = 0;
-			 
+			
+	strcat(filename, phoneNumber);
+	strcat(filename, "-contatos.txt");
+ 
 	fp = fopen(filename, "r");
 	if (fp == NULL){
-		printf("Could not open file %s",filename);
+		printf("\nNão existem contatos cadatrados.\n\n");
 	}
 	else{
 		printf("Lista de Contatos:\n\n");
@@ -289,9 +293,9 @@ void showContacts() {
 				organizer = 0;
 			}
 		}
+	fclose(fp);
 	}
 			
-	fclose(fp);
 }
 
 void showGroupContacts(){
