@@ -184,6 +184,7 @@ void addContact() {
 	FILE * file;
 	int flag;
 
+	strcpy(filename, "");
 	strcat(filename, phoneNumber);
 	strcat(filename, "-contatos.txt");
 
@@ -272,6 +273,7 @@ void showContacts() {
 	char filename[30];
 	int organizer = 0;
 			
+	strcpy(filename, "");
 	strcat(filename, phoneNumber);
 	strcat(filename, "-contatos.txt");
  
