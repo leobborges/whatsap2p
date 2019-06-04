@@ -32,6 +32,7 @@ struct sendServerData {
 struct rcvServerData {
 	struct in_addr ip;
 	unsigned short port;
+	int status;
 };
 
 /* Variáveis Globais */
@@ -317,12 +318,7 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 		exit(6);
 	}
 	
-	if(rcvData.port > 0) {
-		return rcvData;
-	} 
-	else {
-		printf("A mensagem não pode ser enviada. O usuário está offline.\n");
-	}
+	return rcvData;
 }
 
 void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
@@ -457,9 +453,12 @@ void showMessageMenu(int s) {
 		struct rcvServerData userInfo;
 		userInfo = getUserInfo(s, contact);
 
-		/* Print auxiliar enquanto a função de enviar a mensagem não for desenvolvida */
-		// printf("\nUsuário online:\nTelefone: %s\nEndereço de IP: %s\nPorta: %d\n\n", data.phoneNumber, inet_ntoa(userInfo.ip), userInfo.port);
-		sendMessage(userInfo, data.phoneNumber);
+		if(userInfo.status == 1) {
+			printf("A mensagem não pode ser enviada. O usuário está offline.\n");
+		} 
+		else {
+			sendMessage(userInfo, data.phoneNumber);
+		}
 		 
 	}
 	else if (messageOption == 2) {

@@ -28,6 +28,7 @@ struct location
 {
 	struct in_addr ipAddress;
 	unsigned short port;
+	int status;
 };
 
 struct serverData
@@ -207,8 +208,6 @@ int searchPhoneNumber(char phoneNumber[]) {
 struct location searchUserLocation(char phoneNumber[]) {
 	struct location userLocation;
 	data *tmp = users;
-	
-	userLocation.port = -1;
 
 	while(tmp != NULL){
 		if(tmp->userPhone != NULL && strcmp(tmp->userPhone, phoneNumber) == 0) 
@@ -216,11 +215,13 @@ struct location searchUserLocation(char phoneNumber[]) {
 			printf("Usuário %s online. Retornando dados...\n", phoneNumber);
 			userLocation.port = tmp->userLocation.port;
 			userLocation.ipAddress = tmp->userLocation.ipAddress;
+			userLocation.status = 0;
 			return userLocation;
 		}
 		tmp = tmp->prox;
 	}
 
+	userLocation.status = 1;
 	printf("Nenhum usuário encontrado.\n");
 	return userLocation;
 }
