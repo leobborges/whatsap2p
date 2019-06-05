@@ -270,13 +270,14 @@ int search(char filename[], char name[], char searchResult[]){
 		return 0;
 	}
 	else {
-		while (fgets(contact, 100, file) != NULL){
+		while (fgets(contact, 100, file) != NULL){		
 			if(strcmp(contact, name) == 0){
 				fgets(searchResult, 100, file);
 				strtok(searchResult, "\n");
 				fclose(file);
 				return 1;
-			}
+			} 
+			fgets(contact, 100, file);
 		}
 	}
 	fclose(file);
@@ -495,7 +496,6 @@ void showMessageMenu(int s) {
 		printf("Para quem deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(contact, sizeof(contact), stdin);
-		//strtok(contact, "\n");
 		
 		struct rcvServerData userInfo;
 
@@ -503,6 +503,7 @@ void showMessageMenu(int s) {
 			userInfo = getUserInfo(s, receiverPhone);
 		}
 		else{
+			strtok(contact, "\n");
 			userInfo = getUserInfo(s, contact);
 		}
 		
@@ -514,6 +515,7 @@ void showMessageMenu(int s) {
 			__fpurge(stdin);
 			fgets(message, sizeof(message), stdin);
 			strtok(message, "\n");
+			
 			sendMessage(userInfo, data.phoneNumber, message);
 		}
 		 
@@ -532,11 +534,6 @@ void showMessageMenu(int s) {
 		printf("Para que grupo deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(group, sizeof(group), stdin);
-		//strtok(group, "\n");
-
-		// [WHATS-013] função que buscaria o "group" no arquivo de grupos e retornaria o todos os telefones e/ou contatos
-		// chamaria a função criada na tarefa [WHATS-012], para retornar os telefones daqueles que são contatos
-		// entraria em um loop que solicita as informações no servidor, recebe e envia a mensagem, até que a lista de telefones acabe.
 
 		struct rcvServerData userInfo;
 
@@ -545,20 +542,18 @@ void showMessageMenu(int s) {
 		if(searchGroup(filenameGroup, group, receiverContactPhone) == 1){
 			char groupContact[20];
 			int countGroupContact = 0;
-			//strtok(receiverContactPhone, "\n");
-			//userInfo = getUserInfo(s, receiverContactPhone);
-			strcpy(receiverPhone, "");
 			strcpy(groupContact, "");
 			for(int i = 0; i < strlen(receiverContactPhone); i++){
+			strcpy(receiverPhone, "");
 				if (receiverContactPhone[i] == '\n'){
-					groupContact[countGroupContact] = '\0';
+					groupContact[countGroupContact] = '\n';
+					groupContact[countGroupContact+1] = '\0';
 					countGroupContact = 0;
-					printf("filename= %s || groupContact = %s\n", filename, groupContact);
 					if(search(filename, groupContact, receiverPhone) == 1){
-						strtok(receiverPhone, "\n");
 						userInfo = getUserInfo(s, receiverPhone);
 					}
 					else {
+						strtok(groupContact, "\n");
 						userInfo = getUserInfo(s, groupContact);
 					}
 
