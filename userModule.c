@@ -256,8 +256,6 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 		exit(6);
 	}
 	
-	 
-	printf("rcvData.port: %d\n", rcvData.port);
 	return rcvData;
 }
 
@@ -274,7 +272,6 @@ int search(char filename[], char name[], char searchResult[]){
 		while (fgets(contact, 100, file) != NULL){
 			if(strcmp(contact, name) == 0){
 				fgets(searchResult, 100, file);
-				
 				fclose(file);
 				return 1;
 			}
@@ -468,11 +465,12 @@ void showMessageMenu(int s) {
 		printf("Para quem deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(contact, sizeof(contact), stdin);
-		strtok(contact, "\n");
+		// strtok(contact, "\n");
 		
 		struct rcvServerData userInfo;
 
 		if(search(filename, contact, receiverPhone) == 1){
+			strtok(receiverPhone, "\n");
 			userInfo = getUserInfo(s, receiverPhone);
 		}
 		else{
