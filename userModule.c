@@ -49,7 +49,8 @@ void addContact();
 void addContactGroup();
 struct rcvServerData getUserInfo(int s, char phoneNumber[]);
 int search(char filename[], char name[], char searchResult[]);
-void sendMessage(struct rcvServerData userLocation, char phoneNumber[]);
+int searchGroup(char file[], char groupName[], char searchResult[]);
+void sendMessage(struct rcvServerData userLocation, char phoneNumber[], char userMessage[]);
 void showContacts();
 void showGroupContacts();
 void showMenu(int s);
@@ -272,6 +273,7 @@ int search(char filename[], char name[], char searchResult[]){
 		while (fgets(contact, 100, file) != NULL){
 			if(strcmp(contact, name) == 0){
 				fgets(searchResult, 100, file);
+				strtok(searchResult, "\n");
 				fclose(file);
 				return 1;
 			}
@@ -281,17 +283,41 @@ int search(char filename[], char name[], char searchResult[]){
 	return 0;
 }
 
-void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
+int searchGroup(char file[], char groupName[], char searchResult[]){
+    FILE *fp;
+    char str[100];
+    int organizer = 0;
+	char contactsConcate[100];	
+
+    fp = fopen(file, "r");
+    if (fp == NULL){
+        printf("Nao ha grupos salvos.\n\n");
+    }else{
+        while (fgets(str, sizeof(str), fp) != NULL){
+            if(strcmp(str, groupName) == 0){
+                organizer = 1;
+            }else if(organizer >= 1){
+                if(strlen(str) == 1){
+                    fclose(fp);
+					return 1;
+                }else{
+					strcat(searchResult, str);
+                    organizer++;
+                }
+            }
+        }
+        fclose(fp);
+    }
+	return 0;
+}
+
+void sendMessage(struct rcvServerData userLocation, char phoneNumber[], char userMessage[]) {
 	struct sockaddr_in p2pServer;
 	struct messageData message;
 	int p2psocket;
 
-	printf("Digite a mensagem:\n");
-	__fpurge(stdin);
-	fgets(message.message, sizeof(message.message), stdin);
-	strtok(message.message, "\n");
-
 	strcpy(message.senderPhoneNumber, phoneNumber);
+	strcpy(message.message, userMessage);
 
 	p2pServer.sin_family = AF_INET;
 	p2pServer.sin_port = userLocation.port;
@@ -443,7 +469,10 @@ void showMenu(int s) {
 void showMessageMenu(int s) {
 	int messageOption = 0;
 	char filename[30];
+	char filenameGroup[30];
 	char receiverPhone[15];
+	char receiverContactPhone[100];
+	char message[144];
 
 	strcpy(filename, "");
 	strcat(filename, phoneNumber);
@@ -461,16 +490,16 @@ void showMessageMenu(int s) {
 	} while (messageOption < 1 && messageOption > 3);
 
 	if (messageOption == 1) {
+			
 		char contact[20];
 		printf("Para quem deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(contact, sizeof(contact), stdin);
-		// strtok(contact, "\n");
+		//strtok(contact, "\n");
 		
 		struct rcvServerData userInfo;
 
 		if(search(filename, contact, receiverPhone) == 1){
-			strtok(receiverPhone, "\n");
 			userInfo = getUserInfo(s, receiverPhone);
 		}
 		else{
@@ -481,20 +510,76 @@ void showMessageMenu(int s) {
 			printf("A mensagem não pode ser enviada. O usuário está offline.\n");
 		}
 		else {
-			sendMessage(userInfo, data.phoneNumber);
+			printf("Digite a mensagem:\n");
+			__fpurge(stdin);
+			fgets(message, sizeof(message), stdin);
+			strtok(message, "\n");
+			sendMessage(userInfo, data.phoneNumber, message);
 		}
 		 
 	}
 	else if (messageOption == 2) {
+		strcpy(filenameGroup, "");
+		strcat(filenameGroup, phoneNumber);
+		strcat(filenameGroup, "-grupos.txt");
+		
+		printf("Digite a mensagem:\n");
+		__fpurge(stdin);
+		fgets(message, sizeof(message), stdin);
+		strtok(message, "\n");
+		
 		char group[20];
 		printf("Para que grupo deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(group, sizeof(group), stdin);
-		strtok(group, "\n");
+		//strtok(group, "\n");
 
 		// [WHATS-013] função que buscaria o "group" no arquivo de grupos e retornaria o todos os telefones e/ou contatos
 		// chamaria a função criada na tarefa [WHATS-012], para retornar os telefones daqueles que são contatos
 		// entraria em um loop que solicita as informações no servidor, recebe e envia a mensagem, até que a lista de telefones acabe.
+
+		struct rcvServerData userInfo;
+
+		strcpy(receiverContactPhone, "");
+
+		if(searchGroup(filenameGroup, group, receiverContactPhone) == 1){
+			char groupContact[20];
+			int countGroupContact = 0;
+			//strtok(receiverContactPhone, "\n");
+			//userInfo = getUserInfo(s, receiverContactPhone);
+			strcpy(receiverPhone, "");
+			strcpy(groupContact, "");
+			for(int i = 0; i < strlen(receiverContactPhone); i++){
+				if (receiverContactPhone[i] == '\n'){
+					groupContact[countGroupContact] = '\0';
+					countGroupContact = 0;
+					printf("filename= %s || groupContact = %s\n", filename, groupContact);
+					if(search(filename, groupContact, receiverPhone) == 1){
+						strtok(receiverPhone, "\n");
+						userInfo = getUserInfo(s, receiverPhone);
+					}
+					else {
+						userInfo = getUserInfo(s, groupContact);
+					}
+
+					if(userInfo.status == 1) {
+						printf("A mensagem não pode ser enviada. O usuário %s está offline.\n", groupContact);
+					}
+					else {
+						sendMessage(userInfo, data.phoneNumber, message);
+					}
+
+					strcpy(groupContact, "");
+				}
+				else {
+					groupContact[countGroupContact] = receiverContactPhone[i];
+					countGroupContact++;
+				}
+			}			
+		}
+		else{
+			printf("A mensagem não pode ser enviada. O grupo não existe.\n");
+		}
 	}
 }
 
