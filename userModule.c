@@ -32,7 +32,7 @@ struct sendServerData {
 struct rcvServerData {
 	struct in_addr ip;
 	unsigned short port;
-	int status;
+    int status;
 };
 
 /* Variáveis Globais */
@@ -48,6 +48,7 @@ int userSocketPort;
 void addContact();
 void addContactGroup();
 struct rcvServerData getUserInfo(int s, char phoneNumber[]);
+int search(char filename[], char name[], char searchResult[]);
 void sendMessage(struct rcvServerData userLocation, char phoneNumber[]);
 void showContacts();
 void showGroupContacts();
@@ -142,92 +143,29 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
-void showMenu(int s) {
-	int option = 0;
-	do
-	{
-		printf("Menu: \n");
-		printf("1) Enviar mensagem\n");
-		printf("2) Adicionar Contato\n");
-		printf("3) Visualizar Contatos\n");
-		printf("4) Adicionar Grupo de Contatos\n");
-		printf("5) Visualizar Grupos de Contatos\n");
-		printf("6) Sair\n\n");
-		printf("Digite a opcao escolhida:\n");
-
-		__fpurge(stdin);
-		scanf("%d", &option);
-
-		if(option == 1) {
-			showMessageMenu(s);
-		}
-		else if(option == 2) {
-			addContact();
-		}
-		else if(option == 3) {
-			showContacts();
-		}
-		else if(option == 4) {
-			addContactGroup();
-		}
-		else if(option == 5) {
-			showGroupContacts();
-		}
-		else if(option == 6) {
-			char rcvMessage;
-			data.option = option;
-			strcpy(data.phoneNumber, phoneNumber);
-			/* Envia a mensagem para o servidor para remover */
-			if (send(s, &data, sizeof(data), 0) < 0)
-			{
-				perror("Send()");
-				exit(5);
-			}
-			printf("Saindo do WhatsAp2p...\n");
-			/* Recebe a mensagem do servidor no buffer de recep��o */
-			if (recv(s, &rcvMessage, sizeof(rcvMessage), 0) < 0)
-			{
-				perror("Recv()");
-				exit(6);
-			}
-			break;
-		}
-	} while (option != 6);
-}
-
 void addContact() {
 	char contact[20];
-	char str[20];
+	char phone[15] = "";
 	char phoneNumberContact[15];
-	char fileContent[1000];
 	char filename[30];
 	FILE * file;
-	int flag;
+	int flag = 0;
 
 	strcpy(filename, "");
 	strcat(filename, phoneNumber);
 	strcat(filename, "-contatos.txt");
 
 	do{
-		flag = 0;
 		printf("Digite o nome do contato:\n");
 		__fpurge(stdin);
 
 		fgets(contact, sizeof(contact), stdin);
-
-		file = fopen(filename,"r");
-		if (file == NULL){
-			break;
-		}
-		else {
-			while (fgets(str, 100, file) != NULL){
-				if(strcmp(str, contact) == 0){
-					flag = 1;
-					printf("\nContato já existente, digite outro nome..\n\n");
-				}
-			}
-		}
-		fclose(file);
+                flag = search(filename, contact, phone);
+		
+		if(flag == 1)
+			printf("Contato já existente, digite novamente...\n");
+			
+		
 
 	}while(flag == 1);
 
@@ -318,7 +256,32 @@ struct rcvServerData getUserInfo(int s, char phoneNumber[]) {
 		exit(6);
 	}
 	
+	 
+	printf("rcvData.port: %d\n", rcvData.port);
 	return rcvData;
+}
+
+int search(char filename[], char name[], char searchResult[]){
+
+	char contact[20];
+	FILE * file;
+
+	file = fopen(filename,"r");
+	if (file == NULL){
+		return 0;
+	}
+	else {
+		while (fgets(contact, 100, file) != NULL){
+			if(strcmp(contact, name) == 0){
+				fgets(searchResult, 100, file);
+				
+				fclose(file);
+				return 1;
+			}
+		}
+	}
+	fclose(file);
+	return 0;
 }
 
 void sendMessage(struct rcvServerData userLocation, char phoneNumber[]) {
@@ -427,8 +390,67 @@ void showGroupContacts(){
 	}
 }
 
+void showMenu(int s) {
+	int option = 0;
+	do
+	{
+		printf("Menu: \n");
+		printf("1) Enviar mensagem\n");
+		printf("2) Adicionar Contato\n");
+		printf("3) Visualizar Contatos\n");
+		printf("4) Adicionar Grupo de Contatos\n");
+		printf("5) Visualizar Grupos de Contatos\n");
+		printf("6) Sair\n\n");
+		printf("Digite a opcao escolhida:\n");
+
+		__fpurge(stdin);
+		scanf("%d", &option);
+
+		if(option == 1) {
+			showMessageMenu(s);
+		}
+		else if(option == 2) {
+			addContact();
+		}
+		else if(option == 3) {
+			showContacts();
+		}
+		else if(option == 4) {
+			addContactGroup();
+		}
+		else if(option == 5) {
+			showGroupContacts();
+		}
+		else if(option == 6) {
+			char rcvMessage;
+			data.option = option;
+			strcpy(data.phoneNumber, phoneNumber);
+			/* Envia a mensagem para o servidor para remover */
+			if (send(s, &data, sizeof(data), 0) < 0)
+			{
+				perror("Send()");
+				exit(5);
+			}
+			printf("Saindo do WhatsAp2p...\n");
+			/* Recebe a mensagem do servidor no buffer de recep��o */
+			if (recv(s, &rcvMessage, sizeof(rcvMessage), 0) < 0)
+			{
+				perror("Recv()");
+				exit(6);
+			}
+			break;
+		}
+	} while (option != 6);
+}
+
 void showMessageMenu(int s) {
 	int messageOption = 0;
+	char filename[30];
+	char receiverPhone[15];
+
+	strcpy(filename, "");
+	strcat(filename, phoneNumber);
+	strcat(filename, "-contatos.txt");
 			
 	do {
 		system("clear");
@@ -448,14 +470,18 @@ void showMessageMenu(int s) {
 		fgets(contact, sizeof(contact), stdin);
 		strtok(contact, "\n");
 		
-
-		// [WHATS-012] função que buscaria o "contact" no arquivo de contatos e retornaria o telefone
 		struct rcvServerData userInfo;
-		userInfo = getUserInfo(s, contact);
 
+		if(search(filename, contact, receiverPhone) == 1){
+			userInfo = getUserInfo(s, receiverPhone);
+		}
+		else{
+			userInfo = getUserInfo(s, contact);
+		}
+		
 		if(userInfo.status == 1) {
 			printf("A mensagem não pode ser enviada. O usuário está offline.\n");
-		} 
+		}
 		else {
 			sendMessage(userInfo, data.phoneNumber);
 		}
