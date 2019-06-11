@@ -55,6 +55,7 @@ void showContacts();
 void showGroupContacts();
 void showMenu(int s);
 void showMessageMenu(int s);
+void showUsers(int s);
 void *funcThread(void *nns);
 
 /* Cliente TCP */
@@ -419,6 +420,7 @@ void showMenu(int s) {
 	do
 	{
 		printf("Menu: \n");
+		printf("0) Verificar Usuários Online\n");
 		printf("1) Enviar mensagem\n");
 		printf("2) Adicionar Contato\n");
 		printf("3) Visualizar Contatos\n");
@@ -430,7 +432,10 @@ void showMenu(int s) {
 		__fpurge(stdin);
 		scanf("%d", &option);
 
-		if(option == 1) {
+		if(option == 0) {
+			showUsers(s);
+		}
+		else if(option == 1) {
 			showMessageMenu(s);
 		}
 		else if(option == 2) {
@@ -576,6 +581,27 @@ void showMessageMenu(int s) {
 			printf("A mensagem não pode ser enviada. O grupo não existe.\n");
 		}
 	}
+}
+
+void showUsers(int s) {
+	char rcvList[900];
+	data.option = 2;
+	strcpy(data.phoneNumber, phoneNumber);
+	/* Envia a mensagem para o servidor para remover */
+	if (send(s, &data, sizeof(data), 0) < 0)
+	{
+		perror("Send()");
+		exit(5);
+
+	}
+	/* Recebe a mensagem do servidor no buffer de recep��o */
+	if (recv(s, &rcvList, sizeof(rcvList), 0) < 0)
+	{
+		perror("Recv()");
+		exit(6);
+	}
+	printf("Usuários Online: \n");
+	printf("%s\n", rcvList);
 }
 
 /* Thread responsável pela recepção das mensagens de outros clientes */

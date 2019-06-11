@@ -231,6 +231,7 @@ void *funcThread(void *nsClient)
 	int ns = *(int *)nsClient;
 	
 	char sendbuf;
+	char listUsers[900];
 	struct rcvClientData clientData;
 	struct location userLocation;
 	struct in_addr ip;
@@ -274,6 +275,16 @@ void *funcThread(void *nsClient)
 
 			sem_post(&mutex);
 		}
+		else if (clientData.option == 2) {		
+			strcpy(listUsers, "");
+			data *user;
+			user = users;
+			while (user != NULL) {
+				strcat(listUsers, user->userPhone);
+				strcat(listUsers, " \n");
+				user = user->prox;
+			}
+		}
 		else if (clientData.option == 6) {
 			sem_wait(&mutex);
 			searchAndRemoveUser(clientData.phoneNumber);
@@ -281,7 +292,16 @@ void *funcThread(void *nsClient)
 			sendbuf = 'Q';
 		}
 
-		if (clientData.option != 1) {
+		if (clientData.option == 2) {
+			/* Envia uma mensagem ao cliente atrav�s do socket conectado */
+			if (send(ns, &listUsers, sizeof(listUsers), 0) < 0)
+			{
+				perror("Send()");
+				exit(7);
+			}
+		}
+
+		else if (clientData.option != 1) {
 			/* Envia uma mensagem ao cliente atrav�s do socket conectado */
 			if (send(ns, &sendbuf, sizeof(sendbuf), 0) < 0)
 			{
