@@ -498,11 +498,14 @@ void showMessageMenu(int s) {
 	if (messageOption == 1) {
 			
 		char contact[20];
+		char senderPhone[15];
 		printf("Para quem deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(contact, sizeof(contact), stdin);
 		
 		struct rcvServerData userInfo;
+		strcpy(senderPhone, "");
+		strcpy(senderPhone, data.phoneNumber);
 
 		if(search(filename, contact, receiverPhone) == 1){
 			userInfo = getUserInfo(s, receiverPhone);
@@ -521,7 +524,7 @@ void showMessageMenu(int s) {
 			fgets(message, sizeof(message), stdin);
 			strtok(message, "\n");
 			
-			sendMessage(userInfo, data.phoneNumber, message);
+			sendMessage(userInfo, senderPhone, message);
 		}
 		 
 	}
