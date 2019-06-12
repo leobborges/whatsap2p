@@ -532,7 +532,12 @@ void showMessageMenu(int s) {
 		strcpy(filenameGroup, "");
 		strcat(filenameGroup, phoneNumber);
 		strcat(filenameGroup, "-grupos.txt");
+
+		char senderGroupPhone[15];
 		
+		strcpy(senderGroupPhone, "");
+		strcpy(senderGroupPhone, data.phoneNumber);
+
 		printf("Digite a mensagem:\n");
 		__fpurge(stdin);
 		fgets(message, sizeof(message), stdin);
@@ -569,7 +574,7 @@ void showMessageMenu(int s) {
 						printf("A mensagem não pode ser enviada. O usuário %s está offline.\n", groupContact);
 					}
 					else {
-						sendMessage(userInfo, data.phoneNumber, message);
+						sendMessage(userInfo, senderGroupPhone, message);
 					}
 
 					strcpy(groupContact, "");
