@@ -345,6 +345,7 @@ void sendMessage(struct rcvServerData userLocation, char phoneNumber[], char use
         }
 	printf("Mensagem Enviada...\n");
 	sleep(1);
+	close(p2psocket);
 }
 
 void showContacts() {
@@ -498,14 +499,11 @@ void showMessageMenu(int s) {
 	if (messageOption == 1) {
 			
 		char contact[20];
-		char senderPhone[15];
 		printf("Para quem deseja enviar a mensagem?\n");
 		__fpurge(stdin);
 		fgets(contact, sizeof(contact), stdin);
 		
 		struct rcvServerData userInfo;
-		strcpy(senderPhone, "");
-		strcpy(senderPhone, data.phoneNumber);
 
 		if(search(filename, contact, receiverPhone) == 1){
 			userInfo = getUserInfo(s, receiverPhone);
@@ -524,7 +522,7 @@ void showMessageMenu(int s) {
 			fgets(message, sizeof(message), stdin);
 			strtok(message, "\n");
 			
-			sendMessage(userInfo, senderPhone, message);
+			sendMessage(userInfo, phoneNumber, message);
 		}
 		 
 	}
@@ -532,11 +530,6 @@ void showMessageMenu(int s) {
 		strcpy(filenameGroup, "");
 		strcat(filenameGroup, phoneNumber);
 		strcat(filenameGroup, "-grupos.txt");
-
-		char senderGroupPhone[15];
-		
-		strcpy(senderGroupPhone, "");
-		strcpy(senderGroupPhone, data.phoneNumber);
 
 		printf("Digite a mensagem:\n");
 		__fpurge(stdin);
@@ -574,7 +567,7 @@ void showMessageMenu(int s) {
 						printf("A mensagem não pode ser enviada. O usuário %s está offline.\n", groupContact);
 					}
 					else {
-						sendMessage(userInfo, senderGroupPhone, message);
+						sendMessage(userInfo, phoneNumber, message);
 					}
 
 					strcpy(groupContact, "");
